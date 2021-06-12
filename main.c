@@ -1,11 +1,11 @@
 #include "./my.h"
 
-bool **int_grid(int size)
+short **int_grid(int size)
 {
-    bool **grid = malloc(sizeof(bool *) * size + 2);
+    short **grid = malloc(sizeof(short *) * size + 2);
 
     for (int y = 0; y <= size; y++) {
-        grid[y] = malloc(sizeof(bool) * size + 2);
+        grid[y] = malloc(sizeof(short) * size + 2);
         for (int x = 0; x <= size; x++) {
             grid[y][x] = false;
         }
@@ -13,7 +13,7 @@ bool **int_grid(int size)
     return (grid);
 }
 
-void draw_grid(sfRenderWindow **window, bool **grid, int size, sfConvexShape *convex)
+void draw_grid(sfRenderWindow **window, short **grid, int size, sfConvexShape *convex)
 {
     int m_x = 0;
     int m_y = 0;
@@ -27,7 +27,7 @@ void draw_grid(sfRenderWindow **window, bool **grid, int size, sfConvexShape *co
 
     for (int y = 0; y <= size; y++) {
         for (int x = 0; x <= size; x++) {
-            if (grid[y][x] == true) {
+            if (grid[y][x] == 1 || grid[y][x] == 2 || grid[y][x] == 3) {
                 sfConvexShape_setFillColor(convex, sfColor_fromRGB(162, 159, 255));
             } else {
                 sfConvexShape_setFillColor(convex, sfColor_fromRGB(82, 5, 5));
@@ -41,32 +41,32 @@ void draw_grid(sfRenderWindow **window, bool **grid, int size, sfConvexShape *co
     }
 }
 
-int count_neighbur(bool **grid, int x, int y, int size)
+int count_neighbur(short **grid, int x, int y, int size)
 {
     int res = 0;
 
     if (x >= size || y >= size)
         return (-1);
-    if (x > 0 && grid[y][x - 1] == true)
+    if (x > 0 && (grid[y][x - 1] == true || grid[y][x - 1] == 2))
         res++;
-    if (x < size - 1 && grid[y][x + 1] == true)
+    if (x < size - 1 && (grid[y][x + 1] == true || grid[y][x + 1] == 2))
         res++;
-    if (y > 0 && grid[y - 1][x] == true)
+    if (y > 0 && (grid[y - 1][x] == true || grid[y - 1][x] == 2))
         res++;
-    if (y < size - 1 && grid[y + 1][x] == true)
+    if (y < size - 1 && (grid[y + 1][x] == true || grid[y + 1][x] == 2))
         res++;
-    if (y > 0 && x > 0 && grid[y - 1][x - 1] == true)
+    if (y > 0 && x > 0 &&( grid[y - 1][x - 1] == true || grid[y - 1][x - 1] == 2))
         res++;
-    if (y > 0 && x < size - 1 && grid[y - 1][x + 1] == true)
+    if (y > 0 && x < size - 1 && (grid[y - 1][x + 1] == true || grid[y - 1][x + 1] == 2))
         res++;
-    if (y < size - 1 && x < size - 1 && grid[y + 1][x + 1] == true)
+    if (y < size - 1 && x < size - 1 && (grid[y + 1][x + 1] == true || grid[y + 1][x + 1] == 2))
         res++;
-    if (y < size - 1 && x > 0 && grid[y + 1][x - 1] == true)
+    if (y < size - 1 && x > 0 && (grid[y + 1][x - 1] == true || grid[y + 1][x - 1] == 2))
         res++;
     return (res);
 }
 
-void click(bool **grid, int x, int y, int size)
+void click(short **grid, int x, int y, int size)
 {
     int gx = x / (1920 / size);
     int gy = y / (1080 / size);
@@ -77,7 +77,20 @@ void click(bool **grid, int x, int y, int size)
         grid[gy][gx] = false;
 }
 
-void sim(bool **grid, int size, int run)
+void kill(short **grid, int size)
+{
+    for (int y = 0; y < size; y++) {
+        for (int x = 0; x < size; x++) {
+            if (grid[y][x] == 2)
+                grid[y][x] = 0;
+            if (grid[y][x] == 3)
+                grid[y][x] = 1;
+        }
+    }
+    return;
+}
+
+void sim(short **grid, int size, int run)
 {
     int n = 0;
 
@@ -86,22 +99,23 @@ void sim(bool **grid, int size, int run)
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
             n = count_neighbur(grid, x, y, size);
-            if (grid[y][x] == true) {
-                if (n < 2)
-                    grid[y][x] = false;
-                else if (n > 3)
-                    grid[y][x] = false;
+            if (grid[y][x] == 1) {
+            if (n < 2)
+                grid[y][x] = 2;
+            if (n > 3)
+                grid[y][x] = 2;
+            if (n > 1 && n < 4)
+                grid[y][x] = 1;
             }
-            else {
+            if (grid[y][x] == 0)
                 if (n == 3)
-                    grid[y][x] = true;
-            }
+                    grid[y][x] = 3;
         }
     }
+    kill(grid, size);
 }
 
-
-void reset(bool **grid, int size)
+void reset(short **grid, int size)
 {
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++) {
@@ -110,7 +124,7 @@ void reset(bool **grid, int size)
     }
 }
 
-void free_grid(bool ***grid, int size)
+void free_grid(short ***grid, int size)
 {
     for (int y = 0; y < size; y++) {
         free((*grid)[y]);
@@ -123,20 +137,26 @@ int main(int ac, char **av)
     sfVideoMode mode = {1920, 1080, 32};
     sfRenderWindow* window;
     sfEvent event;
-    bool **grid = NULL;
+    short **grid = NULL;
     int size = 0;
     sfConvexShape *conv = sfConvexShape_create();
     int run = -1;
+    int s = 1;
 
     sfConvexShape_setPointCount(conv, 4);
-    if (ac < 2)
+    if (ac < 3)
         return (84);
+    if (av[1][0] == '-' && av[1][1] =='h') {
+        printf("USAGE:\n\n./life [size of grid] [speed of simulation]\n");
+        return (0);
+    }
     size = my_getnbr(av[1]);
     grid = int_grid(size);
+    s = my_getnbr(av[2]);
     window = sfRenderWindow_create(mode, "game of life", sfResize | sfClose, NULL);
     if (!window)
         return EXIT_FAILURE;
-    sfRenderWindow_setFramerateLimit(window, 30);
+    sfRenderWindow_setFramerateLimit(window, s);
     while (sfRenderWindow_isOpen(window))
     {
         while (sfRenderWindow_pollEvent(window, &event))

@@ -66,15 +66,18 @@ int count_neighbur(short **grid, int x, int y, int size)
     return (res);
 }
 
-void click(short **grid, int x, int y, int size)
+void click(short **grid, int x, int y, int size, bool mode)
 {
     int gx = x / (1920 / size);
     int gy = y / (1080 / size);
 
-    if (grid[gy][gx] == false)
-        grid[gy][gx] = true;
-    else
-        grid[gy][gx] = false;
+    if (mode == true) {
+        if (grid[gy][gx] == false)
+            grid[gy][gx] = true;
+    } else {
+        if (grid[gy][gx] == true)
+            grid[gy][gx] = false;
+    }
 }
 
 void kill(short **grid, int size)
@@ -110,6 +113,8 @@ void sim(short **grid, int size, int run)
             if (grid[y][x] == 0)
                 if (n == 3)
                     grid[y][x] = 3;
+            // if ((grid[y + 1][x] == 1 || grid[y + 1][x] == 2) && (grid[y][x] == 0))
+            //     grid[y][x] = 3;
         }
     }
     kill(grid, size);
@@ -117,8 +122,8 @@ void sim(short **grid, int size, int run)
 
 void reset(short **grid, int size)
 {
-    for (int y = 0; y < size; y++) {
-        for (int x = 0; x < size; x++) {
+    for (int y = 0; y <= size; y++) {
+        for (int x = 0; x <= size; x++) {
             grid[y][x] = false;
         }
     }
@@ -142,6 +147,8 @@ int main(int ac, char **av)
     sfConvexShape *conv = sfConvexShape_create();
     int run = -1;
     int s = 1;
+    bool mod = true;
+    sfVector2i mouse;
 
     sfConvexShape_setPointCount(conv, 4);
     if (ac < 3)
@@ -163,17 +170,20 @@ int main(int ac, char **av)
         {
             if (event.type == sfEvtClosed)
                 sfRenderWindow_close(window);
-            if (event.mouseButton.type == sfEvtMouseButtonPressed) {
-                click(grid, event.mouseButton.x, event.mouseButton.y, size);
-            }
-            if (event.type == sfEvtKeyPressed) {
+            if (event.type == sfEvtKeyReleased) {
                 switch (event.key.code) {
                     case sfKeySpace: run *= -1; break;
                     case sfKeyR: reset(grid, size); break;
+                    case sfKeyP: if (mod == 0) mod = 1; else if (mod == 1) mod = 0; break;
                     default: break;
                 }
             }
         }
+        if (sfMouse_isButtonPressed(sfMouseLeft)) {
+            mouse = sfMouse_getPositionRenderWindow(window);
+            click(grid, mouse.x, mouse.y, size, mod);
+        }
+
         sfRenderWindow_clear(window, sfBlack);
         draw_grid(&window, grid, size, conv);
         sim(grid, size, run);
